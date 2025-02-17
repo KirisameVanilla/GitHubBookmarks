@@ -14,21 +14,27 @@ overlay.innerHTML = `
 `;
 document.body.appendChild(overlay);
 
+function renderBookmarks(bookmarks) {
+  const list = document.getElementById('bookmark-list');
+  list.innerHTML = bookmarks.map(bookmark => `
+    <li>
+      <a href="${bookmark.url}" target="_blank">${bookmark.name}</a>
+      <button class="delete-btn" data-url="${bookmark.url}">×</button>
+    </li>
+  `).join('');
+}
+
 // 浮动按钮点击事件
 floatingButton.addEventListener('click', () => {
   overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
-  chrome.runtime.sendMessage({ action: 'getBookmarks' }, (bookmarks) => {
-    const list = document.getElementById('bookmark-list');
-    list.innerHTML = bookmarks.map(bookmark => `
-      <li>
-        <a href="${bookmark.url}" target="_blank">${bookmark.name}</a>
-        <button class="delete-btn" data-url="${bookmark.url}">×</button>
-      </li>
-    `).join('');
-  });
-});
+  chrome.runtime.sendMessage(
+    { action: 'getBookmarks' }, 
+    (bookmarks) => renderBookmarks(bookmarks)
+  );
+}
+);
 
-// save-bookmark 按钮点击事件
+// save
 document.getElementById('save-bookmark').addEventListener('click', () => {
   const name = document.getElementById('bookmark-name').value;
   const url = window.location.href;
@@ -47,23 +53,20 @@ document.getElementById('save-bookmark').addEventListener('click', () => {
     }
     if (response?.success) {
       document.getElementById('bookmark-name').value = '';
-      chrome.runtime.sendMessage({ action: 'getBookmarks' }, (bookmarks) => {
-        const list = document.getElementById('bookmark-list');
-        list.innerHTML = bookmarks.map(bookmark => `
-            <li>
-                <a href="${bookmark.url}" target="_blank">${bookmark.name}</a>
-                <button class="delete-btn" data-url="${bookmark.url}">×</button>
-            </li>
-          `).join('');
-      });
+      chrome.runtime.sendMessage(
+        { action: 'getBookmarks' },
+        (bookmarks) => renderBookmarks(bookmarks)
+      );
     }
     else{
       alert('Failed to save bookmark');
     }
-  });
-});
+  }
+);
+}
+);
 
-// detele-btn 点击事件
+// detele
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('delete-btn')) {
     const urlToDelete = e.target.dataset.url;
@@ -71,15 +74,12 @@ document.addEventListener('click', (e) => {
       action: 'deleteBookmark',
       data: { url: urlToDelete }
     }, () => {
-      chrome.runtime.sendMessage({ action: 'getBookmarks' }, (bookmarks) => {
-        const list = document.getElementById('bookmark-list');
-        list.innerHTML = bookmarks.map(bookmark => `
-            <li>
-                <a href="${bookmark.url}" target="_blank">${bookmark.name}</a>
-                <button class="delete-btn" data-url="${bookmark.url}">×</button>
-            </li>
-          `).join('');
-      });
-    });
+      chrome.runtime.sendMessage(
+        { action: 'getBookmarks' },
+        (bookmarks) => renderBookmarks(bookmarks)
+      );
+    }
+  );
   }
-});
+}
+);

@@ -8,23 +8,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const newBookmarks = [...result.bookmarks, request.data];
         chrome.storage.local.set({ bookmarks: newBookmarks }, () => {
           sendResponse({ success: true });
-        });
-      });
-      return true;
-    } else if (request.action === 'getBookmarks') {
+        }
+      );
+      }
+    );
+    return true;
+    }
+    
+    if (request.action === 'getBookmarks') {
       chrome.storage.local.get({ bookmarks: [] }, (result) => {
         sendResponse(result.bookmarks);
-      });
-      return true;
-    } else if (request.action === 'deleteBookmark') {
+      }
+    );
+    return true;
+    }
+    
+    if (request.action === 'deleteBookmark') {
       chrome.storage.local.get({ bookmarks: [] }, (result) => {
         const filtered = result.bookmarks.filter(
           bookmark => bookmark.url !== request.data.url
         );
         chrome.storage.local.set({ bookmarks: filtered }, () => {
           sendResponse({ success: true });
-        });
-      });
-      return true;
+        }
+      );
+      }
+    );
+    return true;
     }
-  });
+  }
+);
