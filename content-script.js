@@ -7,7 +7,8 @@ const overlay = document.createElement('div');
 overlay.id = 'bookmark-overlay';
 overlay.innerHTML = `
   <div class="overlay-content">
-    <input type="text" id="bookmark-name" placeholder="Bookmark name">
+    <input type="text" id="bookmark-name-user" placeholder="GitHub Username">
+    <input type="text" id="bookmark-name-repo" placeholder="Repository Name">
     <button id="save-bookmark">Save</button>
     <ul id="bookmark-list"></ul>
   </div>
@@ -18,7 +19,7 @@ function renderBookmarks(bookmarks) {
   const list = document.getElementById('bookmark-list');
   list.innerHTML = bookmarks.map(bookmark => `
     <li>
-      <a href="${bookmark.url}" target="_blank">${bookmark.name}</a>
+      <a href="${bookmark.url}" target="_blank">${bookmark.user}/${bookmark.repo}</a>
       <button class="delete-btn" data-url="${bookmark.url}">×</button>
     </li>
   `).join('');
@@ -31,42 +32,43 @@ floatingButton.addEventListener('click', () => {
     { action: 'getBookmarks' }, 
     (bookmarks) => renderBookmarks(bookmarks)
   );
-}
-);
+});
 
-// save
+// 保存书签
 document.getElementById('save-bookmark').addEventListener('click', () => {
-  const name = document.getElementById('bookmark-name').value;
-  const url = window.location.href;
-  const title = document.title;
-  if (name.trim() === '') {
-    alert('Please enter a valid name');
+  const user = document.getElementById('bookmark-name-user').value.trim();
+  const repo = document.getElementById('bookmark-name-repo').value.trim();
+
+  if (!user || !repo) {
+    alert('Please enter a valid GitHub username and repository name');
     return;
   }
+
+  const url = `https://github.com/${user}/${repo}`;
+  const title = document.title;
+
   chrome.runtime.sendMessage({
     action: 'saveBookmark',
-    data: { name, url, title }
+    data: { user, repo, url, title }
   }, (response) => {
     if (response?.already_exist) {
-        alert('Bookmark with same url or name already exists');
-        return;
+      alert('Bookmark with same user/repo already exists');
+      return;
     }
     if (response?.success) {
-      document.getElementById('bookmark-name').value = '';
+      document.getElementById('bookmark-name-user').value = '';
+      document.getElementById('bookmark-name-repo').value = '';
       chrome.runtime.sendMessage(
         { action: 'getBookmarks' },
         (bookmarks) => renderBookmarks(bookmarks)
       );
-    }
-    else{
+    } else {
       alert('Failed to save bookmark');
     }
-  }
-);
-}
-);
+  });
+});
 
-// detele
+// 删除书签
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('delete-btn')) {
     const urlToDelete = e.target.dataset.url;
@@ -78,8 +80,6 @@ document.addEventListener('click', (e) => {
         { action: 'getBookmarks' },
         (bookmarks) => renderBookmarks(bookmarks)
       );
-    }
-  );
+    });
   }
-}
-);
+});
