@@ -36,8 +36,19 @@ floatingButton.addEventListener('click', () => {
 
 // 保存书签
 document.getElementById('save-bookmark').addEventListener('click', () => {
-  const user = document.getElementById('bookmark-name-user').value.trim();
-  const repo = document.getElementById('bookmark-name-repo').value.trim();
+  let user = document.getElementById('bookmark-name-user').value.trim();
+  let repo = document.getElementById('bookmark-name-repo').value.trim();
+
+  if (!user && !repo) {
+    const urlMatch = window.location.href.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if (urlMatch && urlMatch.length >= 3) {
+      user = urlMatch[1];
+      repo = urlMatch[2];
+    } else {
+      alert('Cannot auto-detect GitHub user/repo, please enter manually');
+      return;
+    }
+  }
 
   if (!user || !repo) {
     alert('Please enter a valid GitHub username and repository name');
