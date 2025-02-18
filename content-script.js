@@ -15,6 +15,52 @@ overlay.innerHTML = `
 `;
 document.body.appendChild(overlay);
 
+// 从存储加载位置
+chrome.storage.local.get({ buttonPosition: { x: 20, y: 20 } }, (result) => {
+  floatingButton.style.left = `${result.buttonPosition.x}px`;
+  floatingButton.style.top = `${result.buttonPosition.y}px`;
+});
+
+// 拖动
+let isDragging = false;
+let startX, startY, initialX, initialY;
+
+floatingButton.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  startX = e.clientX;
+  startY = e.clientY;
+  initialX = parseFloat(floatingButton.style.left) || 20;
+  initialY = parseFloat(floatingButton.style.top) || 20;
+  
+  floatingButton.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  
+  const deltaX = e.clientX - startX;
+  const deltaY = e.clientY - startY;
+  
+  floatingButton.style.left = `${initialX + deltaX}px`;
+  floatingButton.style.top = `${initialY + deltaY}px`;
+});
+
+document.addEventListener('mouseup', () => {
+  if (!isDragging) return;
+  
+  isDragging = false;
+  floatingButton.style.cursor = 'pointer';
+  
+  // 保存位置
+  const newPosition = {
+    x: parseFloat(floatingButton.style.left),
+    y: parseFloat(floatingButton.style.top)
+  };
+  
+  chrome.storage.local.set({ buttonPosition: newPosition });
+});
+
 function renderBookmarks(bookmarks) {
   const list = document.getElementById('bookmark-list');
   list.innerHTML = bookmarks.map(bookmark => `
@@ -26,7 +72,13 @@ function renderBookmarks(bookmarks) {
 }
 
 // 浮动按钮点击事件
-floatingButton.addEventListener('click', () => {
+floatingButton.addEventListener('click', (e) => {
+  if (isDragging) return;
+
+  const buttonRect = floatingButton.getBoundingClientRect();
+  overlay.style.left = `${buttonRect.left - 260}px`;
+  overlay.style.top = `${buttonRect.top}px`;
+
   overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
   chrome.runtime.sendMessage(
     { action: 'getBookmarks' }, 
