@@ -7,6 +7,7 @@ const overlay = document.createElement('div');
 overlay.id = 'bookmark-overlay';
 overlay.innerHTML = `
   <div class="overlay-content">
+    <button class="close-btn">×</button>
     <input type="text" id="bookmark-name-user" placeholder="GitHub Username">
     <input type="text" id="bookmark-name-repo" placeholder="Repository Name">
     <button id="save-bookmark">Save</button>
@@ -24,6 +25,10 @@ chrome.storage.local.get({ buttonPosition: { x: 20, y: 20 } }, (result) => {
 // 拖动
 let isDragging = false;
 let startX, startY, initialX, initialY;
+
+document.querySelector('.close-btn').addEventListener('click', () => {
+  overlay.style.display = 'none';
+});
 
 floatingButton.addEventListener('mousedown', (e) => {
   isDragging = true;
