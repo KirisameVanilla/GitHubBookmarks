@@ -17,14 +17,43 @@ overlay.innerHTML = `
 document.body.appendChild(overlay);
 
 // 从存储加载位置
-chrome.storage.local.get({ buttonPosition: { x: 20, y: 20 } }, (result) => {
-  floatingButton.style.left = `${result.buttonPosition.x}px`;
-  floatingButton.style.top = `${result.buttonPosition.y}px`;
-});
+function getButtonPosition(isFreshing=false){
+  chrome.storage.local.get({ buttonPosition: { x: 20, y: 20 } }, (result) => {
+    if (isFreshing) {
+      floatingButton.style.left = `${result.buttonPosition.x}px`;
+      floatingButton.style.top = `${result.buttonPosition.y}px`;
+    }
+  });
+  return {
+    x: parseFloat(floatingButton.style.left),
+    y: parseFloat(floatingButton.style.top)
+  };
+}
+
+function getDistance(position1, position2) {
+  return Math.sqrt(
+    Math.pow(position1.x - position2.x, 2) + Math.pow(position1.y - position2.y, 2)
+  );
+}
+
+function openMenu(){
+  const buttonRect = floatingButton.getBoundingClientRect();
+  overlay.style.left = `${buttonRect.left - 260}px`;
+  overlay.style.top = `${buttonRect.top}px`;
+
+  overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
+  chrome.runtime.sendMessage(
+    { action: 'getBookmarks' }, 
+    (bookmarks) => renderBookmarks(bookmarks)
+  );
+}
+
+getButtonPosition(true)
 
 // 拖动
 let isDragging = false;
 let startX, startY, initialX, initialY;
+let oldButtonPosition;
 
 document.querySelector('.close-btn').addEventListener('click', () => {
   overlay.style.display = 'none';
@@ -36,6 +65,7 @@ floatingButton.addEventListener('mousedown', (e) => {
   startY = e.clientY;
   initialX = parseFloat(floatingButton.style.left) || 20;
   initialY = parseFloat(floatingButton.style.top) || 20;
+  oldButtonPosition = getButtonPosition();
   
   floatingButton.style.cursor = 'grabbing';
   e.preventDefault();
@@ -53,7 +83,6 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mouseup', () => {
   if (!isDragging) return;
-  
   isDragging = false;
   floatingButton.style.cursor = 'pointer';
   
@@ -62,7 +91,12 @@ document.addEventListener('mouseup', () => {
     x: parseFloat(floatingButton.style.left),
     y: parseFloat(floatingButton.style.top)
   };
-  
+
+  if (getDistance(oldButtonPosition, newPosition) < 1) {
+    openMenu();
+    return;
+  }
+
   chrome.storage.local.set({ buttonPosition: newPosition });
 });
 
@@ -75,21 +109,6 @@ function renderBookmarks(bookmarks) {
     </li>
   `).join('');
 }
-
-// 浮动按钮点击事件
-floatingButton.addEventListener('click', (e) => {
-  if (isDragging) return;
-
-  const buttonRect = floatingButton.getBoundingClientRect();
-  overlay.style.left = `${buttonRect.left - 260}px`;
-  overlay.style.top = `${buttonRect.top}px`;
-
-  overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
-  chrome.runtime.sendMessage(
-    { action: 'getBookmarks' }, 
-    (bookmarks) => renderBookmarks(bookmarks)
-  );
-});
 
 // 保存书签
 document.getElementById('save-bookmark').addEventListener('click', () => {
